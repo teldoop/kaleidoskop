@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, Upload } from "lucide-react";
+import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload } from "lucide-react";
 import Button from "@/components/button";
 import Dropdown, { type Option } from "@/components/dropdown";
 
@@ -26,6 +26,7 @@ function Take() {
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [err, setErr] = useState("");
+  const [facing, setFacing] = useState<"user" | "environment">("user"); // depan / belakang
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -42,11 +43,11 @@ function Take() {
   useEffect(() => {
     if (!camOn) return;
     let dead = false, s: MediaStream | undefined;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: "user" } })
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: { ideal: facing } } })
       .then((x) => { s = x; if (dead) return x.getTracks().forEach((t) => t.stop()); if (video.current) video.current.srcObject = x; })
       .catch(() => setErr("Kamera tidak dapat diakses (butuh HTTPS/localhost & izin kamera). Gunakan tombol Pilih file."));
     return () => { dead = true; s?.getTracks().forEach((t) => t.stop()); };
-  }, [camOn]);
+  }, [camOn, facing]);
 
   const upload = async (blob: Blob) => {
     setStatus("uploading"); setErr("");
@@ -92,7 +93,18 @@ function Take() {
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full rounded-2xl bg-black object-cover" />
+          <div className="relative">
+            <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full rounded-2xl bg-black object-cover" />
+            {/* Hanya mobile: balik kamera depan/belakang */}
+            <button
+              type="button"
+              aria-label="Balik kamera"
+              onClick={() => { setErr(""); setFacing((f) => (f === "user" ? "environment" : "user")); }}
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition active:scale-95 md:hidden"
+            >
+              <SwitchCamera size={20} aria-hidden />
+            </button>
+          </div>
           <Button className="w-full" onClick={snap}><Camera size={16} aria-hidden />Jepret</Button>
           <Button variant="outline" className="w-full" onClick={() => picker.current?.click()}><ImagePlus size={16} aria-hidden />Pilih file</Button>
         </div>
