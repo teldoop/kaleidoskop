@@ -7,7 +7,7 @@ const font = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "Aplikasi Kaleidoskop", template: "%s | Kaleidoskop" },
-  description: "Aplikasi untuk foto tugas Kaleidoskop INTRIVIA 2026",
+  description: "Dokumentasi foto anggota TIF UB'26",
 };
 
 export const viewport: Viewport = {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { admin, currentUser } from "@/lib/supabase";
+import { admin, currentUser, getProdi } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   const user = await currentUser();
@@ -12,12 +12,15 @@ export async function POST(req: NextRequest) {
   if (file.size > 8 * 1024 * 1024) return NextResponse.json({ error: "Maksimal 8MB" }, { status: 413 });
 
   const db = admin();
+  const { data: mem } = await db.from("members").select("prodi").eq("id", memberId).maybeSingle();
+  if (!mem) return NextResponse.json({ error: "Anggota tidak ditemukan" }, { status: 404 });
+  if (mem.prodi !== (await getProdi(user.id))) return NextResponse.json({ error: "Anggota beda program studi" }, { status: 403 });
   const path = `${user.id}/${memberId}`; // upsert => foto lama otomatis tergantikan
   const up = await db.storage.from("photos").upload(path, await file.arrayBuffer(), { upsert: true, contentType: file.type });
   if (up.error) return NextResponse.json({ error: up.error.message }, { status: 500 });
 
   const photoLink = `${db.storage.from("photos").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-  const { error } = await db.from("photos").upsert({ user_id: user.id, member_id: memberId, photo_link: photoLink });
+  const { error } = await db.from("photos").upsert({ user_id: user.id, member_id: memberId, photo_link: photoLink, updated_at: new Date().toISOString() });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ photoLink });
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Circle, CircleCheck } from "lucide-react";
+import { prodiShort } from "@/lib/prodi";
 
 type M = { id: string; nama: string; nim: string; cluster: number; photoLink: string | null };
 
@@ -36,12 +37,13 @@ function ListSkeleton() {
 export default function List() {
   const [members, setMembers] = useState<M[] | null>(null); // null = masih memuat
   const [error, setError] = useState(false);
+  const [prodi, setProdi] = useState<string | null>(null);
   const [filter, setFilter] = useState<number | "Semua">("Semua");
 
   useEffect(() => {
     fetch("/api/members?mode=all")
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => setMembers(d.members ?? []))
+      .then((d) => { setProdi(d.prodi ?? null); setMembers(d.members ?? []); })
       .catch(() => { setError(true); setMembers([]); });
   }, []);
 
@@ -50,7 +52,11 @@ export default function List() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-extrabold text-amber-900 dark:text-amber-100">Daftar TIF UB&apos;26</h1>
+      {members === null ? (
+        <Bone className="h-8 w-56" />
+      ) : (
+        <h1 className="text-2xl font-extrabold text-amber-900 dark:text-amber-100">Daftar {prodiShort(prodi)} UB&apos;26</h1>
+      )}
       {members === null ? (
         <ListSkeleton />
       ) : error ? (

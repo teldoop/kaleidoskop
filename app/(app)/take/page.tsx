@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCcw, RefreshCw, Upload } from "lucide-react";
+import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, Upload } from "lucide-react";
 import Button from "@/components/button";
 import Dropdown, { type Option } from "@/components/dropdown";
 
@@ -26,7 +26,6 @@ function Take() {
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [err, setErr] = useState("");
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -34,21 +33,20 @@ function Take() {
     const d = await (await fetch(`/api/members?q=${encodeURIComponent(q)}`)).json();
     setOpts(d.members?.map(toOpt) ?? []);
   }, []);
-
   useEffect(() => {
     const id = sp.get("id");
-    if (id) fetch(`/api/members?id=${id}`).then((r) => r.json()).then((d) => d.members?.[0] && setMember(toOpt(d.members[0])));
+    if (id) fetch(`/api/members?id=${id}`).then((r) => r.json()).then((d) => d.members?.[0]?.prodi === d.prodi && setMember(toOpt(d.members[0])));
   }, [sp]);
 
   const camOn = !!member && !preview && status === "idle";
   useEffect(() => {
     if (!camOn) return;
     let dead = false, s: MediaStream | undefined;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode } })
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: "user" } })
       .then((x) => { s = x; if (dead) return x.getTracks().forEach((t) => t.stop()); if (video.current) video.current.srcObject = x; })
       .catch(() => setErr("Kamera tidak dapat diakses (butuh HTTPS/localhost & izin kamera). Gunakan tombol Pilih file."));
     return () => { dead = true; s?.getTracks().forEach((t) => t.stop()); };
-  }, [camOn, facingMode]);
+  }, [camOn]);
 
   const upload = async (blob: Blob) => {
     setStatus("uploading"); setErr("");
@@ -59,52 +57,29 @@ function Take() {
     if (r.ok) { setStatus("done"); setPreview(null); }
     else { setStatus("idle"); setErr((await r.json()).error ?? "Upload gagal"); }
   };
-
   const snap = () => {
     const v = video.current!;
     const c = document.createElement("canvas");
     c.width = v.videoWidth; c.height = v.videoHeight;
-    const ctx = c.getContext("2d")!;
-    
-    if (facingMode === "user") {
-      ctx.translate(c.width, 0);
-      ctx.scale(-1, 1);
-    }
-    
-    ctx.drawImage(v, 0, 0);
+    c.getContext("2d")!.drawImage(v, 0, 0);
     c.toBlob((b) => b && upload(b), "image/jpeg", 0.9);
   };
-
   const pick = (f?: File) => { if (f) setPreview({ blob: f, url: URL.createObjectURL(f) }); };
 
   return (
     <div className="mx-auto max-w-md">
       <h1 className="text-2xl font-extrabold text-amber-900 dark:text-amber-100">Ambil Foto</h1>
-      <div className="mt-4">
-        <Dropdown options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." />
-      </div>
-      
+      <div className="mt-4"><Dropdown options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." /></div>
       {err && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">{err}</p>}
       <input ref={picker} type="file" accept="image/*" hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
 
-      {member && status === "uploading" && (
-        <p className="mt-8 flex items-center justify-center gap-2 font-semibold text-amber-700 dark:text-amber-300">
-          <Loader2 size={18} className="animate-spin" aria-hidden />Uploading...
-        </p>
-      )}
-
+      {member && status === "uploading" && <p className="mt-8 flex items-center justify-center gap-2 font-semibold text-amber-700 dark:text-amber-300"><Loader2 size={18} className="animate-spin" aria-hidden />Uploading...</p>}
       {member && status === "done" && (
         <div className="mt-8 text-center">
-          <p className="flex items-center justify-center gap-2 font-semibold text-green-600 dark:text-green-400">
-            <CircleCheck size={20} aria-hidden />Foto berhasil diupload
-          </p>
-          {/* Tombol Jepret lagi mereset status, pilihan member, sekaligus hasil search/opts dropdown */}
-          <Button className="mt-4" onClick={() => { setStatus("idle"); setMember(null); setOpts([]); }}>
-            <Camera size={16} aria-hidden />Jepret lagi
-          </Button>
+          <p className="flex items-center justify-center gap-2 font-semibold text-green-600 dark:text-green-400"><CircleCheck size={20} aria-hidden />Foto berhasil diupload</p>
+          <Button className="mt-4" onClick={() => setStatus("idle")}><Camera size={16} aria-hidden />Jepret lagi</Button>
         </div>
       )}
-
       {member && status === "idle" && (preview ? (
         <div className="mt-6 space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -116,18 +91,8 @@ function Take() {
           </div>
         </div>
       ) : (
-        <div className="mt-6 space-y-3 relative">
-          <video ref={video} autoPlay playsInline muted className={`aspect-[3/4] w-full rounded-2xl bg-black object-cover ${facingMode === "user" ? "-scale-x-100" : ""}`} />
-          
-          <button 
-            type="button"
-            onClick={() => setFacingMode((prev) => (prev === "user" ? "environment" : "user"))}
-            className="absolute top-3 right-3 rounded-full bg-black/50 p-2.5 text-white backdrop-blur-md transition hover:bg-black/70"
-            title="Balik Kamera"
-          >
-            <RefreshCcw size={20} aria-hidden />
-          </button>
-
+        <div className="mt-6 space-y-3">
+          <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full rounded-2xl bg-black object-cover" />
           <Button className="w-full" onClick={snap}><Camera size={16} aria-hidden />Jepret</Button>
           <Button variant="outline" className="w-full" onClick={() => picker.current?.click()}><ImagePlus size={16} aria-hidden />Pilih file</Button>
         </div>

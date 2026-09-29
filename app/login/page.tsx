@@ -13,8 +13,8 @@ export default function Login() {
           <Aperture size={56} strokeWidth={1.75} aria-hidden />
         </motion.div>
         <h1 className="mt-4 text-2xl font-extrabold text-amber-900 dark:text-amber-100">Aplikasi Kaleidoskop</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Login untuk melanjutkan</p>
-        <Button className="mt-6 w-full" onClick={signIn}><LogIn size={16} aria-hidden />Login dengan Google</Button>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Masuk untuk mulai memotret</p>
+        <Button className="mt-6 w-full" onClick={signIn}><LogIn size={16} aria-hidden />Masuk dengan Google</Button>
       </motion.div>
     </main>
   );

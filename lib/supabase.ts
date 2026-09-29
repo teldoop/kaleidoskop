@@ -15,3 +15,9 @@ export async function currentUser() {
   });
   return (await sb.auth.getUser()).data.user;
 }
+
+/** Prodi akun yang login (dari tabel profiles); null jika belum memilih. */
+export async function getProdi(userId: string): Promise<string | null> {
+  const { data } = await admin().from("profiles").select("prodi").eq("user_id", userId).maybeSingle();
+  return data?.prodi ?? null;
+}
