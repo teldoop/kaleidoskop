@@ -4,9 +4,14 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Camera, Download, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Button from "@/components/button";
-import ConfirmModal from "@/components/confirm-modal"; // <-- Import komponen reusable
+import ConfirmModal from "@/components/confirm-modal";
 
 type M = { id: string; nama: string; nim: string; cluster: number; photoLink: string | null };
+
+// Komponen Skeleton kecil untuk efek loading
+const Bone = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse rounded-lg bg-amber-900/15 dark:bg-white/10 ${className}`} />
+);
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +37,23 @@ export default function Detail() {
     a.href = URL.createObjectURL(blob); a.download = `${m!.nama}.jpg`; a.click(); URL.revokeObjectURL(a.href);
   };
 
-  if (!m) return <p className="flex items-center gap-2 text-amber-700 dark:text-amber-300"><Loader2 size={18} className="animate-spin" aria-hidden />Memuat...</p>;
+  // Tampilan Skeleton Loading saat data `m` belum tersedia
+  if (!m) {
+    return (
+      <div className="mx-auto max-w-md">
+        <Bone className="mb-4 h-10 w-28" />
+        <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow dark:border-amber-400/20 dark:bg-zinc-900 dark:shadow-none">
+          <Bone className="h-8 w-3/4" />
+          <Bone className="mt-2 h-4 w-1/2" />
+          <Bone className="mt-6 aspect-[3/4] w-full rounded-2xl" />
+          <div className="mt-5 flex gap-2">
+            <Bone className="h-10 w-28" />
+            <Bone className="h-10 w-24" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="mx-auto max-w-md">
@@ -52,7 +73,6 @@ export default function Detail() {
         </div>
       </div>
 
-      {/* Menggunakan ConfirmModal yang reusable */}
       <ConfirmModal
         isOpen={confirm}
         title="Hapus Foto"
