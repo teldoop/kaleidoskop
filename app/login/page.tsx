@@ -15,11 +15,6 @@ export default function Login() {
           <Aperture size={56} strokeWidth={1.75} aria-hidden />
         </motion.div>
         <h1 className="mt-4 text-2xl font-extrabold text-amber-900 dark:text-amber-100">Aplikasi Kaleidoskop</h1>
-        
-        {/* Tambahan Deskripsi Tujuan Aplikasi agar terbaca oleh Google */}
-        <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed px-2">
-          Aplikasi untuk mempermudah maba DTIF UB'26 dalam proses pengerjaan tugas kaleidoskop.
-        </p>
 
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Login untuk melanjutkan</p>
         
