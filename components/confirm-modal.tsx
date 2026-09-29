@@ -2,6 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import Button from "@/components/button";
+import { useModalBehavior } from "@/lib/use-modal";
 
 type ConfirmModalProps = {
   isOpen: boolean;
@@ -24,10 +25,17 @@ export default function ConfirmModal({
   onConfirm,
   onClose,
 }: ConfirmModalProps) {
+  // Kunci scroll + Esc menutup; saat sedang memproses (busy) modal tidak bisa ditutup
+  useModalBehavior(isOpen, () => { if (!busy) onClose(); });
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }} // klik di luar kotak = tutup
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

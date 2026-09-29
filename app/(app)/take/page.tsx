@@ -6,8 +6,8 @@ import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, SwitchCamera, Uploa
 import Button from "@/components/button";
 import Dropdown, { type Option } from "@/components/dropdown";
 
-type M = { id: string; nama: string; nim: string };
-const toOpt = (m: M): Option => ({ value: m.id, label: m.nama.replace(/-/g, " "), hint: m.nim });
+type M = { id: string; nama: string; nim: string; photoLink?: string | null };
+const toOpt = (m: M): Option => ({ value: m.id, label: m.nama.replace(/-/g, " "), hint: m.nim, done: !!m.photoLink });
 
 async function shrink(blob: Blob, max = 1600): Promise<Blob> {
   try {
@@ -28,11 +28,13 @@ function Take() {
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [err, setErr] = useState("");
   const [facing, setFacing] = useState<"user" | "environment">("user");
-  
+
   const [isLoadingQuery, setIsLoadingQuery] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  
+
+  const [resetKey, setResetKey] = useState(0);
+
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -57,6 +59,22 @@ function Take() {
         });
     }
   }, [sp]);
+
+  useEffect(() => {
+    if (!showModal) return;
+    const body = document.body;
+    const prev = { overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth; // cegah halaman "melompat" saat scrollbar hilang
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setShowModal(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      body.style.overflow = prev.overflow;
+      body.style.paddingRight = prev.paddingRight;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [showModal]);
 
   const camOn = !!member && !preview && status === "idle";
   useEffect(() => {
@@ -86,11 +104,11 @@ function Take() {
     c.toBlob((b) => b && upload(b), "image/jpeg", 0.9);
   };
 
-  const pick = (f?: File) => { 
+  const pick = (f?: File) => {
     if (f) {
       setPreview({ blob: f, url: URL.createObjectURL(f) });
       setShowModal(false);
-    } 
+    }
   };
 
   const handleFileButtonClick = () => {
@@ -108,26 +126,27 @@ function Take() {
     setOpts([]);
     setPreview(null);
     setErr("");
+    setResetKey((k) => k + 1);
   };
 
   return (
     <div className="mx-auto max-w-md">
       <h1 className="text-2xl font-extrabold text-amber-900 dark:text-amber-100">Ambil Foto</h1>
-      
+
       <div className="mt-4">
         {isLoadingQuery ? (
           <div className="h-12 w-full animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
         ) : (
-          <Dropdown options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." />
+          <Dropdown key={resetKey} options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." />
         )}
       </div>
 
       {err && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">{err}</p>}
-      
+
       <input ref={picker} type="file" accept="image/*" hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
 
       {member && status === "uploading" && <p className="mt-8 flex items-center justify-center gap-2 font-semibold text-amber-700 dark:text-amber-300"><Loader2 size={18} className="animate-spin" aria-hidden />Uploading...</p>}
-      
+
       {member && status === "done" && (
         <div className="mt-8 text-center">
           <p className="flex items-center justify-center gap-2 font-semibold text-green-600 dark:text-green-400"><CircleCheck size={20} aria-hidden />Foto berhasil diupload</p>
@@ -170,6 +189,7 @@ function Take() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onMouseDown={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
             className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 dark:bg-black/60"
           >
             <motion.div
@@ -178,16 +198,16 @@ function Take() {
               exit={{ scale: 0.9 }}
               className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-amber-400/20 dark:bg-zinc-900"
             >
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 <X size={20} />
               </button>
-              
+
               <p className="font-semibold text-zinc-900 dark:text-zinc-100">Unggah Foto</p>
-              
-              <div 
+
+              <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={(e) => {
@@ -195,17 +215,16 @@ function Take() {
                   setIsDragging(false);
                   if (e.dataTransfer.files?.[0]) pick(e.dataTransfer.files[0]);
                 }}
-                className={`mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
-                  isDragging ? "border-amber-500 bg-amber-50/50 dark:bg-amber-500/10" : "border-zinc-300 dark:border-zinc-700"
-                }`}
+                className={`mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${isDragging ? "border-amber-500 bg-amber-50/50 dark:bg-amber-500/10" : "border-zinc-300 dark:border-zinc-700"
+                  }`}
               >
                 <UploadCloud size={48} className="text-amber-500 mb-3" />
                 <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Tarik file kesini</p>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   Atau{" "}
-                  <button 
-                    type="button" 
-                    onClick={() => picker.current?.click()} 
+                  <button
+                    type="button"
+                    onClick={() => picker.current?.click()}
                     className="font-medium text-amber-600 underline hover:text-amber-700 dark:text-amber-400"
                   >
                     pilih file

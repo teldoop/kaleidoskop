@@ -9,6 +9,7 @@ import ConfirmModal from "@/components/confirm-modal"; // Sesuaikan path import 
 import { useAccount } from "@/lib/use-account";
 import { prodiLabel } from "@/lib/prodi";
 import { timeAgo } from "@/lib/time";
+import Image from "next/image";
 
 const RECENT_LIMIT = 10;
 type Member = { id: string; nama: string; nim: string; cluster: number; photoLink: string | null; photoAt: string | null };
@@ -88,8 +89,8 @@ export default function Home() {
             </div>
           </>
         )}
-        {/* Mengubah onClick tombol Keluar agar membuka modal konfirmasi */}
-        <Button variant="outline" onClick={() => setLogoutModalOpen(true)} className="shrink-0"><LogOut size={16} aria-hidden />Keluar</Button>
+        {/* Mengubah onClick tombol Logout agar membuka modal konfirmasi */}
+        <Button variant="outline" onClick={() => setLogoutModalOpen(true)} className="shrink-0"><LogOut size={16} aria-hidden />Logout</Button>
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white p-4 dark:border-amber-400/20 dark:bg-zinc-900">
@@ -150,8 +151,7 @@ export default function Home() {
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">{r.nim} · Cluster {r.cluster}</p>
                     <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">{timeAgo(r.photoAt, now)}</p>
                   </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.photoLink} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                  <Image src={r.photoLink} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
                 </Link>
               </motion.li>
             ))}
@@ -164,9 +164,9 @@ export default function Home() {
       {/* Komponen Modal Konfirmasi Keluar */}
       <ConfirmModal
         isOpen={logoutModalOpen}
-        title="Konfirmasi Keluar"
-        message="Apakah Anda yakin ingin keluar dari akun ini?"
-        confirmText="Keluar"
+        title="Konfirmasi Logout"
+        message="Apakah Anda yakin ingin logout?"
+        confirmText="Logout"
         cancelText="Batal"
         busy={isLoggingOut}
         onConfirm={handleConfirmLogout}

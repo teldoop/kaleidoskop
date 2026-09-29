@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Camera, Download, Loader2, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
 import Button from "@/components/button";
 import { prodiLabel } from "@/lib/prodi";
+import ConfirmModal from "@/components/confirm-modal";
 
 type M = { id: string; nama: string; nim: string; cluster: number; prodi: string; photoLink: string | null };
 
@@ -76,10 +78,14 @@ export default function Detail() {
       <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow dark:border-amber-400/20 dark:bg-zinc-900 dark:shadow-none">
         <h1 className="text-2xl font-extrabold capitalize text-amber-900 dark:text-amber-100">{m.nama.replace(/-/g, " ")}</h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">NIM {m.nim} · Cluster {m.cluster}</p>
-        {m.photoLink && <motion.img initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} src={m.photoLink} alt={m.nama} className="mt-4 w-full rounded-2xl object-cover" />}
+        {m.photoLink && (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 overflow-hidden rounded-2xl">
+            <Image src={m.photoLink} alt={m.nama} width={0} height={0} sizes="(min-width: 480px) 400px, 100vw" className="h-auto w-full" />
+          </motion.div>
+        )}
         <div className="mt-5 flex flex-wrap gap-2">
           <Button href={`/take?id=${m.id}`}>
-            {m.photoLink ? <><RefreshCw size={16} aria-hidden />Ganti foto</> : <><Camera size={16} aria-hidden />Ambil foto</>}
+            {m.photoLink ? <><RefreshCw size={16} aria-hidden />Ganti foto</> : <><Camera size={16} aria-hidden />Ambil atau upload foto</>}
           </Button>
           {m.photoLink && <>
             <Button variant="outline" onClick={download}><Download size={16} aria-hidden />Download</Button>
@@ -87,21 +93,14 @@ export default function Detail() {
           </>}
         </div>
       </div>
-      <AnimatePresence>
-        {confirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4 dark:bg-black/60">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm rounded-2xl bg-white p-6 dark:border dark:border-amber-400/20 dark:bg-zinc-900">
-              <p className="font-semibold">Apakah Anda ingin menghapus?</p>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setConfirm(false)}>Tidak</Button>
-                <Button variant="danger" onClick={remove} disabled={busy}>
-                  {busy ? <><Loader2 size={16} className="animate-spin" aria-hidden />Menghapus...</> : "Ya"}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+  isOpen={confirm}
+  title="Konfirmasi Hapus Foto"
+  message="Apakah Anda yakin ingin menghapus foto ini?"
+  busy={busy}
+  onConfirm={remove}
+  onClose={() => setConfirm(false)}
+/>
     </div>
   );
 }

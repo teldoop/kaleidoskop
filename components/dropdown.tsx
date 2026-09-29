@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Search } from "lucide-react";
 import Input from "./input";
 
-export type Option = { value: string; label: string; hint?: string };
+export type Option = { value: string; label: string; hint?: string; done?: boolean }; // done = sudah difoto
 type Props = { options: Option[]; selected: Option | null; onSelect: (o: Option) => void; onSearch: (q: string) => void; placeholder?: string };
 
 export default function Dropdown({ options, selected, onSelect, onSearch, placeholder = "Pilih..." }: Props) {
@@ -56,7 +56,10 @@ export default function Dropdown({ options, selected, onSelect, onSearch, placeh
                     >
                       <span className="flex items-center gap-2">
                         {active && <Check size={14} aria-hidden className="text-amber-500 dark:text-amber-400" />}
-                        {o.label}
+                        <span>
+                          {o.label}
+                          {o.done && <span className="block text-xs font-medium text-green-600 dark:text-green-400">Sudah Difoto</span>}
+                        </span>
                       </span>
                       <span className="text-xs text-zinc-400 dark:text-zinc-500">{o.hint}</span>
                     </button>

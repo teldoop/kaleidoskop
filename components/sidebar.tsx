@@ -87,7 +87,7 @@ export default function Sidebar() {
             )}
           </div>
           <button onClick={() => setLogoutModalOpen(true)} className={`${item} ${idle}`}>
-            <LogOut size={20} aria-hidden />Keluar
+            <LogOut size={20} aria-hidden />Logout
           </button>
         </div>
       </nav>
@@ -96,9 +96,9 @@ export default function Sidebar() {
 
       <ConfirmModal
         isOpen={logoutModalOpen}
-        title="Konfirmasi Keluar"
-        message="Apakah Anda yakin ingin keluar dari akun ini?"
-        confirmText="Keluar"
+        title="Konfirmasi Logout"
+        message="Apakah Anda yakin ingin logout?"
+        confirmText="Logout"
         cancelText="Batal"
         busy={isLoggingOut}
         onConfirm={handleConfirmLogout}
