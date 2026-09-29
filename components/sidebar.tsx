@@ -6,6 +6,7 @@ import { Aperture, Camera, Download, House, LogOut, Users } from "lucide-react";
 import Avatar from "./avatar";
 import Button from "./button";
 import InstallHelp from "./install-help";
+import ConfirmModal from "./confirm-modal";
 import { useAccount } from "@/lib/use-account";
 import { installApp, useCanInstall } from "@/lib/pwa";
 
@@ -24,11 +25,27 @@ export default function Sidebar() {
   const { me, logout } = useAccount();
   const canInstall = useCanInstall();
   const [help, setHelp] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const install = async () => { if ((await installApp()) === "ios") setHelp(true); };
+
+  const handleConfirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+    } catch (error) {
+      console.error("Gagal keluar:", error);
+    } finally {
+      setIsLoggingOut(false);
+      setLogoutModalOpen(false);
+    }
+  };
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-amber-200 bg-amber-50 p-2 dark:border-amber-400/20 dark:bg-zinc-900 md:static md:h-screen md:w-60 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-4">
+      {/* Menggunakan md:sticky md:top-0 md:h-screen */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-amber-200 bg-amber-50 p-2 dark:border-amber-400/20 dark:bg-zinc-900 md:sticky md:top-0 md:h-screen md:w-60 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-4">
         <p className="hidden items-center gap-2 px-3 pb-4 text-lg font-extrabold text-amber-600 dark:text-amber-400 md:flex">
           <Aperture size={22} aria-hidden /> Kaleidoskop
         </p>
@@ -69,12 +86,24 @@ export default function Sidebar() {
               </>
             )}
           </div>
-          <button onClick={logout} className={`${item} ${idle}`}>
+          <button onClick={() => setLogoutModalOpen(true)} className={`${item} ${idle}`}>
             <LogOut size={20} aria-hidden />Keluar
           </button>
         </div>
       </nav>
+
       <InstallHelp open={help} onClose={() => setHelp(false)} />
+
+      <ConfirmModal
+        isOpen={logoutModalOpen}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari akun ini?"
+        confirmText="Keluar"
+        cancelText="Batal"
+        busy={isLoggingOut}
+        onConfirm={handleConfirmLogout}
+        onClose={() => setLogoutModalOpen(false)}
+      />
     </>
   );
 }

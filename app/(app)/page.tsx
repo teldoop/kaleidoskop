@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeftRight, Camera, Clock, LogOut, Users } from "lucide-react";
 import Avatar from "@/components/avatar";
 import Button from "@/components/button";
+import ConfirmModal from "@/components/confirm-modal"; // Sesuaikan path import jika letaknya berbeda
 import { useAccount } from "@/lib/use-account";
 import { prodiLabel } from "@/lib/prodi";
 import { timeAgo } from "@/lib/time";
@@ -24,6 +25,10 @@ export default function Home() {
   const [prodi, setProdi] = useState<string | null>(null);
   const [recent, setRecent] = useState<Recent[] | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  
+  // State untuk modal konfirmasi keluar
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => { // perbarui keterangan waktu tiap menit
     const t = setInterval(() => setNow(Date.now()), 60_000);
@@ -45,6 +50,19 @@ export default function Home() {
       })
       .catch(() => setError(true));
   }, []);
+
+  // Fungsi handler saat konfirmasi "Ya" pada modal ditekan
+  const handleConfirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+    } catch (error) {
+      console.error("Gagal keluar:", error);
+    } finally {
+      setIsLoggingOut(false);
+      setLogoutModalOpen(false);
+    }
+  };
 
   const pct = stat && stat.total ? Math.round((stat.done / stat.total) * 100) : 0;
   const loading = !stat && !error;
@@ -70,7 +88,8 @@ export default function Home() {
             </div>
           </>
         )}
-        <Button variant="outline" onClick={logout} className="shrink-0"><LogOut size={16} aria-hidden />Keluar</Button>
+        {/* Mengubah onClick tombol Keluar agar membuka modal konfirmasi */}
+        <Button variant="outline" onClick={() => setLogoutModalOpen(true)} className="shrink-0"><LogOut size={16} aria-hidden />Keluar</Button>
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white p-4 dark:border-amber-400/20 dark:bg-zinc-900">
@@ -141,6 +160,18 @@ export default function Home() {
           <p className="text-sm text-zinc-500 dark:text-zinc-400">{error ? "Gagal memuat aktivitas." : "Belum ada foto yang diambil."}</p>
         )}
       </section>
+
+      {/* Komponen Modal Konfirmasi Keluar */}
+      <ConfirmModal
+        isOpen={logoutModalOpen}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari akun ini?"
+        confirmText="Keluar"
+        cancelText="Batal"
+        busy={isLoggingOut}
+        onConfirm={handleConfirmLogout}
+        onClose={() => setLogoutModalOpen(false)}
+      />
     </div>
   );
 }
