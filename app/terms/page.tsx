@@ -3,7 +3,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-2xl py-6">
+    <div className="mx-auto max-w-2xl py-6 px-5 md:px-0">
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/"
