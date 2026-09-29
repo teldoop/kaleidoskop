@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Offline | Kaleidoskop</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 1rem;
+      font-family: system-ui, sans-serif; background: #fffbeb; color: #78350f; }
+    @media (prefers-color-scheme: dark) { body { background: #09090b; color: #fef3c7; } }
+    h1 { margin: 0 0 .5rem; font-size: 1.5rem; }
+    p { margin: 0 0 1.5rem; opacity: .8; }
+    button { border: 0; border-radius: .75rem; padding: .7rem 1.2rem; font-weight: 600; background: #fbbf24; color: #451a03; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Anda sedang offline</h1>
+    <p>Sambungkan ke internet untuk memakai Aplikasi Kaleidoskop.</p>
+    <button onclick="location.reload()">Coba lagi</button>
+  </main>
+</body>
+</html>

@@ -2,10 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Aperture, Camera, House, LogOut, Users } from "lucide-react";
+import { Aperture, Camera, Download, House, LogOut, Users } from "lucide-react";
 import Avatar from "./avatar";
-import ConfirmModal from "./confirm-modal";
+import Button from "./button";
+import InstallHelp from "./install-help";
 import { useAccount } from "@/lib/use-account";
+import { installApp, useCanInstall } from "@/lib/pwa";
 
 const nav = [
   { href: "/", label: "Beranda", icon: House },
@@ -20,27 +22,16 @@ const bone = "animate-pulse rounded bg-amber-900/15 dark:bg-white/10";
 export default function Sidebar() {
   const path = usePathname();
   const { me, logout } = useAccount();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      setBusy(true);
-      await logout();
-    } finally {
-      setBusy(false);
-      setShowLogoutConfirm(false);
-    }
-  };
+  const canInstall = useCanInstall();
+  const [help, setHelp] = useState(false);
+  const install = async () => { if ((await installApp()) === "ios") setHelp(true); };
 
   return (
     <>
-      {/* Sidebar Fixed */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-amber-200 bg-amber-50 p-2 dark:border-amber-400/20 dark:bg-zinc-900 md:fixed md:inset-y-0 md:left-0 md:h-screen md:w-60 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-4">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-amber-200 bg-amber-50 p-2 dark:border-amber-400/20 dark:bg-zinc-900 md:static md:h-screen md:w-60 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-4">
         <p className="hidden items-center gap-2 px-3 pb-4 text-lg font-extrabold text-amber-600 dark:text-amber-400 md:flex">
           <Aperture size={22} aria-hidden /> Kaleidoskop
         </p>
-        
         {nav.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? path === "/" : path.startsWith(href);
           return (
@@ -50,8 +41,18 @@ export default function Sidebar() {
           );
         })}
 
-        {/* Hanya desktop: info akun + tombol keluar */}
+        {/* Mobile: menu Instal di samping Ambil Foto (hilang jika sudah terinstal) */}
+        {canInstall && (
+          <button onClick={install} aria-label="Instal Aplikasi" className={`${item} ${idle} md:hidden`}>
+            <Download size={20} aria-hidden />Instal
+          </button>
+        )}
+
+        {/* Hanya desktop: tombol instal + info akun + tombol keluar */}
         <div className="hidden md:mt-auto md:flex md:flex-col md:gap-2">
+          {canInstall && (
+            <Button variant="outline" onClick={install} className="w-full"><Download size={16} aria-hidden />Instal Aplikasi</Button>
+          )}
           <div className="flex items-center gap-3 rounded-xl border border-amber-200 p-3 dark:border-amber-400/20">
             {me === null ? (
               <>
@@ -68,23 +69,12 @@ export default function Sidebar() {
               </>
             )}
           </div>
-          <button onClick={() => setShowLogoutConfirm(true)} className={`${item} ${idle}`}>
+          <button onClick={logout} className={`${item} ${idle}`}>
             <LogOut size={20} aria-hidden />Keluar
           </button>
         </div>
       </nav>
-
-      {/* Modal Konfirmasi Logout Reusable */}
-      <ConfirmModal
-        isOpen={showLogoutConfirm}
-        title="Keluar Akun"
-        message="Apakah Anda yakin ingin keluar dari sesi ini?"
-        confirmText="Ya, Keluar"
-        cancelText="Batal"
-        busy={busy}
-        onConfirm={handleLogout}
-        onClose={() => setShowLogoutConfirm(false)}
-      />
+      <InstallHelp open={help} onClose={() => setHelp(false)} />
     </>
   );
 }
