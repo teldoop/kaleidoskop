@@ -1,7 +1,8 @@
 "use client";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Camera, CircleCheck, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload, X, UploadCloud } from "lucide-react";
 import Button from "@/components/button";
 import Dropdown, { type Option } from "@/components/dropdown";
 
@@ -26,7 +27,12 @@ function Take() {
   const [preview, setPreview] = useState<{ blob: Blob; url: string } | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [err, setErr] = useState("");
-  const [facing, setFacing] = useState<"user" | "environment">("user"); // depan / belakang
+  const [facing, setFacing] = useState<"user" | "environment">("user");
+  
+  const [isLoadingQuery, setIsLoadingQuery] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -34,9 +40,22 @@ function Take() {
     const d = await (await fetch(`/api/members?q=${encodeURIComponent(q)}`)).json();
     setOpts(d.members?.map(toOpt) ?? []);
   }, []);
+
   useEffect(() => {
     const id = sp.get("id");
-    if (id) fetch(`/api/members?id=${id}`).then((r) => r.json()).then((d) => d.members?.[0]?.prodi === d.prodi && setMember(toOpt(d.members[0])));
+    if (id) {
+      setIsLoadingQuery(true);
+      fetch(`/api/members?id=${id}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.members?.[0]?.prodi === d.prodi) {
+            setMember(toOpt(d.members[0]));
+          }
+        })
+        .finally(() => {
+          setIsLoadingQuery(false);
+        });
+    }
   }, [sp]);
 
   const camOn = !!member && !preview && status === "idle";
@@ -58,6 +77,7 @@ function Take() {
     if (r.ok) { setStatus("done"); setPreview(null); }
     else { setStatus("idle"); setErr((await r.json()).error ?? "Upload gagal"); }
   };
+
   const snap = () => {
     const v = video.current!;
     const c = document.createElement("canvas");
@@ -65,29 +85,63 @@ function Take() {
     c.getContext("2d")!.drawImage(v, 0, 0);
     c.toBlob((b) => b && upload(b), "image/jpeg", 0.9);
   };
-  const pick = (f?: File) => { if (f) setPreview({ blob: f, url: URL.createObjectURL(f) }); };
+
+  const pick = (f?: File) => { 
+    if (f) {
+      setPreview({ blob: f, url: URL.createObjectURL(f) });
+      setShowModal(false);
+    } 
+  };
+
+  const handleFileButtonClick = () => {
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      picker.current?.click();
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const resetForm = () => {
+    setStatus("idle");
+    setMember(null);
+    setOpts([]);
+    setPreview(null);
+    setErr("");
+  };
 
   return (
     <div className="mx-auto max-w-md">
       <h1 className="text-2xl font-extrabold text-amber-900 dark:text-amber-100">Ambil Foto</h1>
-      <div className="mt-4"><Dropdown options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." /></div>
+      
+      <div className="mt-4">
+        {isLoadingQuery ? (
+          <div className="h-12 w-full animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+        ) : (
+          <Dropdown options={opts} selected={member} onSelect={(o) => { setMember(o); setStatus("idle"); setPreview(null); }} onSearch={search} placeholder="Pilih anggota..." />
+        )}
+      </div>
+
       {err && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">{err}</p>}
+      
       <input ref={picker} type="file" accept="image/*" hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
 
       {member && status === "uploading" && <p className="mt-8 flex items-center justify-center gap-2 font-semibold text-amber-700 dark:text-amber-300"><Loader2 size={18} className="animate-spin" aria-hidden />Uploading...</p>}
+      
       {member && status === "done" && (
         <div className="mt-8 text-center">
           <p className="flex items-center justify-center gap-2 font-semibold text-green-600 dark:text-green-400"><CircleCheck size={20} aria-hidden />Foto berhasil diupload</p>
-          <Button className="mt-4" onClick={() => setStatus("idle")}><Camera size={16} aria-hidden />Jepret lagi</Button>
+          <Button className="mt-4" onClick={resetForm}><Camera size={16} aria-hidden />Jepret lagi</Button>
         </div>
       )}
+
       {member && status === "idle" && (preview ? (
         <div className="mt-6 space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={preview.url} alt="Pratinjau" className="w-full rounded-2xl" />
           <div className="flex gap-2">
             <Button onClick={() => upload(preview.blob)}><Upload size={16} aria-hidden />Upload</Button>
-            <Button variant="outline" onClick={() => picker.current?.click()}><RefreshCw size={16} aria-hidden />Ganti</Button>
+            <Button variant="outline" onClick={handleFileButtonClick}><RefreshCw size={16} aria-hidden />Ganti</Button>
             <Button variant="outline" onClick={() => setPreview(null)}><Camera size={16} aria-hidden />Gunakan kamera</Button>
           </div>
         </div>
@@ -95,7 +149,6 @@ function Take() {
         <div className="mt-6 space-y-3">
           <div className="relative">
             <video ref={video} autoPlay playsInline muted className="aspect-[3/4] w-full rounded-2xl bg-black object-cover" />
-            {/* Hanya mobile: balik kamera depan/belakang */}
             <button
               type="button"
               aria-label="Balik kamera"
@@ -106,9 +159,64 @@ function Take() {
             </button>
           </div>
           <Button className="w-full" onClick={snap}><Camera size={16} aria-hidden />Jepret</Button>
-          <Button variant="outline" className="w-full" onClick={() => picker.current?.click()}><ImagePlus size={16} aria-hidden />Pilih file</Button>
+          <Button variant="outline" className="w-full" onClick={handleFileButtonClick}><ImagePlus size={16} aria-hidden />Pilih file</Button>
         </div>
       ))}
+
+      {/* Modal Desktop menggunakan Framer Motion & style yang identik dengan ConfirmModal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 dark:bg-black/60"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-amber-400/20 dark:bg-zinc-900"
+            >
+              <button 
+                onClick={() => setShowModal(false)}
+                className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X size={20} />
+              </button>
+              
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">Unggah Foto</p>
+              
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files?.[0]) pick(e.dataTransfer.files[0]);
+                }}
+                className={`mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
+                  isDragging ? "border-amber-500 bg-amber-50/50 dark:bg-amber-500/10" : "border-zinc-300 dark:border-zinc-700"
+                }`}
+              >
+                <UploadCloud size={48} className="text-amber-500 mb-3" />
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Tarik file kesini</p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Atau{" "}
+                  <button 
+                    type="button" 
+                    onClick={() => picker.current?.click()} 
+                    className="font-medium text-amber-600 underline hover:text-amber-700 dark:text-amber-400"
+                  >
+                    pilih file
+                  </button>{" "}
+                  pada komputer
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
