@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, CircleCheck, FlipVertical2, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload, X, UploadCloud, Zap, ZapOff } from "lucide-react";
+import { Camera, CircleCheck, FlipVertical2, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload, X, UploadCloud } from "lucide-react";
 import Button from "@/components/button";
 import ConfirmModal from "@/components/confirm-modal"; // sesuaikan path-nya
 import Dropdown, { type Option } from "@/components/dropdown";
@@ -38,15 +38,12 @@ function Take() {
 
   const [isMobile, setIsMobile] = useState(false);
   const [mirror, setMirror] = useState(true);
-  const [torch, setTorch] = useState(false);
-  const track = useRef<MediaStreamTrack | null>(null);
 
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   const showSwitchCam = isMobile && !!navigator.mediaDevices?.getUserMedia;
   const showMirror = !isMobile || facing === "user";
-  const showFlash = isMobile && facing === "environment";
   const mirrored = mirror && showMirror;
 
   const search = useCallback(async (q: string) => {
@@ -98,14 +95,11 @@ function Take() {
         s = x;
         if (dead) return x.getTracks().forEach((t) => t.stop());
         if (video.current) video.current.srcObject = x;
-        track.current = x.getVideoTracks()[0];
       })
       .catch(() => setErr("Kamera tidak dapat diakses (butuh HTTPS/localhost & izin kamera). Gunakan tombol Pilih file."));
     return () => {
       dead = true;
       s?.getTracks().forEach((t) => t.stop());
-      track.current = null;
-      setTorch(false);
     };
   }, [camOn, facing]);
 
@@ -117,18 +111,6 @@ function Take() {
     const r = await fetch("/api/selfie", { method: "POST", body: fd });
     if (r.ok) { setStatus("done"); setPreview(null); }
     else { setStatus("idle"); setErr((await r.json()).error ?? "Upload gagal"); }
-  };
-
-  const toggleTorch = async () => {
-    const t = track.current;
-    if (!t) return;
-    const next = !torch;
-    try {
-      await t.applyConstraints({ advanced: [{ torch: next } as MediaTrackConstraintSet & { torch: boolean }] });
-      setTorch(next);
-    } catch {
-      setErr("Flash tidak dapat digunakan");
-    }
   };
 
   const snap = () => {
@@ -232,18 +214,6 @@ function Take() {
                   className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${mirror ? "bg-amber-500/80" : "bg-black/50"}`}
                 >
                   <FlipVertical2 size={20} aria-hidden />
-                </button>
-              )}
-
-              {showFlash && (
-                <button
-                  type="button"
-                  aria-label="Flash"
-                  aria-pressed={torch}
-                  onClick={toggleTorch}
-                  className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${torch ? "bg-amber-500/80" : "bg-black/50"}`}
-                >
-                  {torch ? <Zap size={20} aria-hidden /> : <ZapOff size={20} aria-hidden />}
                 </button>
               )}
             </div>
