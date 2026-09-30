@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, CircleCheck, FlipVertical2, ImagePlus, Loader2, RefreshCw, SwitchCamera, Upload, X, UploadCloud, Zap, ZapOff } from "lucide-react";
 import Button from "@/components/button";
+import ConfirmModal from "@/components/confirm-modal"; // sesuaikan path-nya
 import Dropdown, { type Option } from "@/components/dropdown";
 
 type M = { id: string; nama: string; nim: string; photoLink?: string | null };
@@ -41,12 +42,14 @@ function Take() {
   const [torch, setTorch] = useState(false);
   const track = useRef<MediaStreamTrack | null>(null);
 
+  const [showFlashInfo, setShowFlashInfo] = useState(false);
+
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   const showSwitchCam = isMobile && !!navigator.mediaDevices?.getUserMedia;
   const showMirror = !isMobile || facing === "user";
-  const showFlash = isMobile && facing === "environment" && canTorch;
+  const showFlash = isMobile && facing === "environment";
   const mirrored = mirror && showMirror;
 
   const search = useCallback(async (q: string) => {
@@ -243,9 +246,11 @@ function Take() {
                 <button
                   type="button"
                   aria-label="Flash"
-                  aria-pressed={torch}
-                  onClick={toggleTorch}
-                  className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${torch ? "bg-amber-500/80" : "bg-black/50"}`}
+                  aria-pressed={canTorch ? torch : undefined}
+                  aria-disabled={!canTorch}
+                  onClick={() => (canTorch ? toggleTorch() : setShowFlashInfo(true))}
+                  className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${!canTorch ? "bg-black/50 opacity-40" : torch ? "bg-amber-500/80" : "bg-black/50"
+                    }`}
                 >
                   {torch ? <Zap size={20} aria-hidden /> : <ZapOff size={20} aria-hidden />}
                 </button>
@@ -256,6 +261,16 @@ function Take() {
           <Button variant="outline" className="w-full" onClick={handleFileButtonClick}><ImagePlus size={16} aria-hidden />Pilih file</Button>
         </div>
       ))}
+
+      <ConfirmModal
+        isOpen={showFlashInfo}
+        title="Flash tidak tersedia"
+        message="Perangkat anda tidak mendukung flash."
+        confirmText="Mengerti"
+        hideCancel
+        onConfirm={() => setShowFlashInfo(false)}
+        onClose={() => setShowFlashInfo(false)}
+      />
 
       {/* Modal Desktop menggunakan Framer Motion & style yang identik dengan ConfirmModal */}
       <AnimatePresence>

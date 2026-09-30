@@ -10,6 +10,7 @@ type ConfirmModalProps = {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  hideCancel?: boolean;
   busy?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -22,6 +23,7 @@ export default function ConfirmModal({
   confirmText = "Ya",
   cancelText = "Tidak",
   busy = false,
+  hideCancel = false,
   onConfirm,
   onClose,
 }: ConfirmModalProps) {
@@ -50,9 +52,11 @@ export default function ConfirmModal({
             <p className="font-semibold text-zinc-900 dark:text-zinc-100">{title}</p>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose} disabled={busy}>
-                {cancelText}
-              </Button>
+              {!hideCancel && (
+                <Button variant="outline" onClick={onClose} disabled={busy}>
+                  {cancelText}
+                </Button>
+              )}
               <Button variant="danger" onClick={onConfirm} disabled={busy}>
                 {busy ? (
                   <>
