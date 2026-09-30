@@ -118,8 +118,7 @@ function Take() {
     const c = document.createElement("canvas");
     c.width = v.videoWidth; c.height = v.videoHeight;
     const ctx = c.getContext("2d")!;
-    if (mirrored) { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
-    ctx.drawImage(v, 0, 0);
+    ctx.drawImage(v, 0, 0); // tanpa flip: hasil foto selalu tidak mirror
     c.toBlob((b) => b && upload(b), "image/jpeg", 0.9);
   };
 
