@@ -8,6 +8,10 @@ const font = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap" });
 export const metadata: Metadata = {
   title: { default: "Aplikasi Kaleidoskop", template: "%s | Kaleidoskop" },
   description: "Dokumentasi foto anggota TIF UB'26",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const viewport: Viewport = {
