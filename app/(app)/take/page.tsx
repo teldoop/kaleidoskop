@@ -38,11 +38,8 @@ function Take() {
 
   const [isMobile, setIsMobile] = useState(false);
   const [mirror, setMirror] = useState(true);
-  const [canTorch, setCanTorch] = useState(false);
   const [torch, setTorch] = useState(false);
   const track = useRef<MediaStreamTrack | null>(null);
-
-  const [showFlashInfo, setShowFlashInfo] = useState(false);
 
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
@@ -101,17 +98,13 @@ function Take() {
         s = x;
         if (dead) return x.getTracks().forEach((t) => t.stop());
         if (video.current) video.current.srcObject = x;
-        const t = x.getVideoTracks()[0];
-        track.current = t;
-        const caps = (t.getCapabilities?.() ?? {}) as MediaTrackCapabilities & { torch?: boolean };
-        setCanTorch(!!caps.torch);
+        track.current = x.getVideoTracks()[0];
       })
       .catch(() => setErr("Kamera tidak dapat diakses (butuh HTTPS/localhost & izin kamera). Gunakan tombol Pilih file."));
     return () => {
       dead = true;
       s?.getTracks().forEach((t) => t.stop());
       track.current = null;
-      setCanTorch(false);
       setTorch(false);
     };
   }, [camOn, facing]);
@@ -246,11 +239,9 @@ function Take() {
                 <button
                   type="button"
                   aria-label="Flash"
-                  aria-pressed={canTorch ? torch : undefined}
-                  aria-disabled={!canTorch}
-                  onClick={() => (canTorch ? toggleTorch() : setShowFlashInfo(true))}
-                  className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${!canTorch ? "bg-black/50 opacity-40" : torch ? "bg-amber-500/80" : "bg-black/50"
-                    }`}
+                  aria-pressed={torch}
+                  onClick={toggleTorch}
+                  className={`grid h-10 w-10 place-items-center rounded-full text-white backdrop-blur transition active:scale-95 ${torch ? "bg-amber-500/80" : "bg-black/50"}`}
                 >
                   {torch ? <Zap size={20} aria-hidden /> : <ZapOff size={20} aria-hidden />}
                 </button>
@@ -261,16 +252,6 @@ function Take() {
           <Button variant="outline" className="w-full" onClick={handleFileButtonClick}><ImagePlus size={16} aria-hidden />Pilih file</Button>
         </div>
       ))}
-
-      <ConfirmModal
-        isOpen={showFlashInfo}
-        title="Flash tidak tersedia"
-        message="Perangkat anda tidak mendukung flash."
-        confirmText="Mengerti"
-        hideCancel
-        onConfirm={() => setShowFlashInfo(false)}
-        onClose={() => setShowFlashInfo(false)}
-      />
 
       {/* Modal Desktop menggunakan Framer Motion & style yang identik dengan ConfirmModal */}
       <AnimatePresence>
