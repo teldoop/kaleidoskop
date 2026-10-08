@@ -9,7 +9,6 @@ import ConfirmModal from "@/components/confirm-modal"; // Sesuaikan path import 
 import { useAccount } from "@/lib/use-account";
 import { prodiLabel } from "@/lib/prodi";
 import { timeAgo } from "@/lib/time";
-import Image from "next/image";
 
 const RECENT_LIMIT = 10;
 type Member = { id: string; nama: string; nim: string; cluster: number; photoLink: string | null; photoAt: string | null };
@@ -151,7 +150,7 @@ export default function Home() {
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">{r.nim} · Cluster {r.cluster}</p>
                     <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">{timeAgo(r.photoAt, now)}</p>
                   </div>
-                  <Image src={r.photoLink} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                  <img src={r.photoLink} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
                 </Link>
               </motion.li>
             ))}
