@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Camera, Download, Loader2, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
@@ -80,7 +79,7 @@ export default function Detail() {
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">NIM {m.nim} · Cluster {m.cluster}</p>
         {m.photoLink && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-4 overflow-hidden rounded-2xl">
-            <Image src={m.photoLink} alt={m.nama} width={0} height={0} sizes="(min-width: 480px) 400px, 100vw" className="h-auto w-full" />
+            <img src={m.photoLink} alt={m.nama} width={0} height={0} sizes="(min-width: 480px) 400px, 100vw" className="h-auto w-full" />
           </motion.div>
         )}
         <div className="mt-5 flex flex-wrap gap-2">
